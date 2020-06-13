@@ -1,47 +1,21 @@
-# ==================================== BASE ====================================
-ARG INSTALL_PYTHON_VERSION=${INSTALL_PYTHON_VERSION:-3.7}
-FROM python:${INSTALL_PYTHON_VERSION}-slim-buster AS base
+# This is a simple Dockerfile to use while developing
+# It's not suitable for production
+#
+# It allows you to run both flask and celery if you enabled it
+# for flask: docker run --env-file=.flaskenv image flask run
+# for celery: docker run --env-file=.flaskenv image celery worker -A myapi.celery_app:app
+#
+# note that celery will require a running broker and result backend
+FROM python:3.8
 
-RUN apt-get update
-RUN apt-get install -y \
-    curl \
-    gcc
+RUN mkdir /code
+WORKDIR /code
 
-ARG INSTALL_NODE_VERSION=${INSTALL_NODE_VERSION:-12}
-RUN curl -sL https://deb.nodesource.com/setup_${INSTALL_NODE_VERSION}.x | bash -
-RUN apt-get install -y \
-    nodejs \
-    && apt-get -y autoclean
+COPY requirements.txt setup.py tox.ini ./
+RUN pip install -r requirements.txt
+RUN pip install -e .
 
-WORKDIR /app
-COPY ["Pipfile", "shell_scripts/auto_pipenv.sh", "./"]
-RUN pip install pipenv
+COPY hauleye hauleye/
+COPY migrations migrations/
 
-COPY . .
-
-RUN useradd -m sid
-RUN chown -R sid:sid /app
-USER sid
-ENV PATH="/home/sid/.local/bin:${PATH}"
-RUN npm install
-
-# ================================= DEVELOPMENT ================================
-FROM base AS development
-RUN pipenv install --dev
-EXPOSE 2992
 EXPOSE 5000
-CMD [ "pipenv", "run", "npm", "start" ]
-
-# ================================= PRODUCTION =================================
-FROM base AS production
-RUN pipenv install
-COPY supervisord.conf /etc/supervisor/supervisord.conf
-COPY supervisord_programs /etc/supervisor/conf.d
-EXPOSE 5000
-ENTRYPOINT ["/bin/bash", "shell_scripts/supervisord_entrypoint.sh"]
-CMD ["-c", "/etc/supervisor/supervisord.conf"]
-
-# =================================== MANAGE ===================================
-FROM base AS manage
-COPY --from=development /home/sid/.local/share/virtualenvs/ /home/sid/.local/share/virtualenvs/
-ENTRYPOINT [ "pipenv", "run", "flask" ]
