@@ -1,0 +1,26 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[dev-packages]
+
+[packages]
+marshmallow = ">=3"
+flask-marshmallow = "*"
+marshmallow-sqlalchemy = "*"
+python-dotenv = "*"
+passlib = "*"
+apispec = {extras = ["yaml"], version = "*"}
+apispec-webframeworks = "*"
+tox = "*"
+gunicorn = "*"
+Flask = "*"
+Flask-RESTful = "*"
+Flask-Migrate = "*"
+Flask-SQLAlchemy = "*"
+Flask-JWT-Extended = "*"
+ws4py = "*"
+
+[requires]
+python_version = "3.8"
